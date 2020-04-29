@@ -4,7 +4,7 @@ import requests
 import json
 import sys
 import xlsxwriter
-
+from argparse import ArgumentParser
 
 with open("channel_mappings.json", 'r') as channel_map:
     channel_mapping = json.load(channel_map)
@@ -120,7 +120,6 @@ def get_parser():
     """
     :return: parser for argparse
     """
-    from argparse import ArgumentParser
     parser = ArgumentParser(description="Mist site creation tool")
     parser.add_argument(
         "-k", "--key", dest="mist_api_key", help="Mist API Key", type=str, required=True
@@ -129,7 +128,7 @@ def get_parser():
         "-o", "--org", dest="org_id", help="Mist Org ID", type=str, required=True
     )
     parser.add_argument(
-        "-e", "--EU", dest="mist_europe", help="Mist EU Environment", required=False
+        "-e", "--", dest="mist_env", help="Mist environment", default="api.mist.com", required=False
     )
     parser.add_argument(
         "-s", "--site", dest="site_id", help="Site ID for checking Country info", required=True
@@ -151,11 +150,11 @@ def get_channel_column(channel):
     return channel_mapping[my_channel]
 
 def main(argv):
-
     try:
         org_id = argv.org_id
         mist_api_key = argv.mist_api_key
         site_id = argv.site_id
+        host = argv.mist_env
     except:
         print("Missing Required Values, aborting")
         sys.exit()
@@ -170,7 +169,8 @@ def main(argv):
     results = []
     print("Looking up each Country Code on Site")
     for entry in country_const:
-        results.append(mist_connector.http_get(f"/api/v1/sites/{site_id}/devices/ap_channels?country_code={entry['alpha2']}").json())
+        if entry['alpha2'] != "__":
+            results.append(mist_connector.http_get(f"/api/v1/sites/{site_id}/devices/ap_channels?country_code={entry['alpha2']}").json())
 
     print(f"Pulled {len(results)} countries info")
     build_xlsx(results)
