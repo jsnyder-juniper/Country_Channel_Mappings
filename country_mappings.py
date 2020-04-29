@@ -134,6 +134,9 @@ def get_parser():
     parser.add_argument(
         "-s", "--site", dest="site_id", help="Site ID for checking Country info", required=True
     )
+    parser.add_argument(
+        "-f", "--filename", dest="file_name", help="excel filename to output", required=False
+    )
     return parser
 
 
@@ -161,12 +164,15 @@ def main(argv):
         mist_connector = Mist(mist_api)
     except ValueError:
         sys.exit()
+    print("Getting Country Info")
     country_const = mist_connector.http_get("/api/v1/const/countries").json()
 
     results = []
+    print("Looking up each Country Code on Site")
     for entry in country_const:
         results.append(mist_connector.http_get(f"/api/v1/sites/{site_id}/devices/ap_channels?country_code={entry['alpha2']}").json())
 
+    print(f"Pulled {len(results)} countries info")
     build_xlsx(results)
 
 
@@ -176,6 +182,7 @@ def build_xlsx(results, file_name="country_channels.xlsx"):
     :param results: list of outputs from /api/v1/mist/site/:site_id/devices/ap_channels?country_code={alpha2}
     :param file_name: Name of the excel file to be created
     """
+    print("Building Excel File")
     workbook = xlsxwriter.Workbook(file_name)
     worksheet = workbook.add_worksheet()
     worksheet.write("A1", "Name")
@@ -212,6 +219,7 @@ def build_xlsx(results, file_name="country_channels.xlsx"):
             for channel in entry['band5_channels']['20']:
                 worksheet.write(f'{get_channel_column(channel)}{row}', 'X')
     workbook.close()
+    print("Excel File Finished")
     return
 
 
